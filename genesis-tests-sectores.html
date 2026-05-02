@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GENESIS · Descubre Tu Sector</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: #07070f; font-family: Georgia, serif; color: #e0e0e0; }
+
+  /* TOP BAR */
+  .topbar { border-bottom: 1px solid #12121e; padding: 0 28px; display: flex; align-items: center; height: 54px; position: sticky; top: 0; background: #07070f; z-index: 100; }
+  .topbar-line { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, #F5C842, #42C8F5, #A87FF0, #F590C0, transparent); }
+  .topbar-logo { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(90deg, #F5C842, #42C8F5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-right: 16px; }
+  .topbar-sub { font-size: 11px; color: #444; font-family: monospace; margin-right: auto; }
+  .topbar-counter { font-size: 11px; color: #555; font-family: monospace; background: #111120; border: 1px solid #1e1e30; border-radius: 20px; padding: 4px 12px; }
+
+  /* MAIN */
+  .main { padding: 28px; max-width: 760px; margin: 0 auto; }
+  .intro { margin-bottom: 24px; }
+  .intro-label { font-size: 11px; color: #555; font-family: monospace; letter-spacing: 3px; margin-bottom: 8px; }
+  .intro-title { font-size: clamp(22px, 4vw, 34px); font-weight: 400; letter-spacing: -1px; margin: 0 0 10px; font-family: Georgia, serif; background: linear-gradient(135deg, #F5C842, #42C8F5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .intro-desc { font-size: 13px; color: #666; font-family: monospace; line-height: 1.8; }
+
+  /* SUMMARY */
+  #score-summary { display: none; background: #0c0c18; border: 1px solid #1e1e30; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
+  .summary-label { font-size: 10px; color: #555; font-family: monospace; letter-spacing: 2px; margin-bottom: 12px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+  .summary-cell { text-align: center; padding: 10px 6px; background: #111120; border: 1px solid #1e1e30; border-radius: 8px; transition: background 0.3s, border-color 0.3s; }
+  .summary-cell-icon { font-size: 14px; color: #333; }
+  .summary-cell-score { font-size: 14px; font-weight: 700; font-family: monospace; }
+  .summary-cell-name { font-size: 8px; color: #444; font-family: monospace; margin-top: 2px; line-height: 1.2; }
+
+  /* SECTOR RADAR (resultado final) */
+  #final-score { display: none; border-top: 1px solid #1e1e30; padding-top: 16px; margin-top: 4px; }
+  .final-title { font-size: 10px; color: #555; font-family: monospace; letter-spacing: 2px; margin-bottom: 14px; }
+  .sector-bars { display: flex; flex-direction: column; gap: 8px; }
+  .sector-bar-row { display: flex; align-items: center; gap: 10px; }
+  .sector-bar-name { font-size: 10px; font-family: monospace; color: #888; width: 160px; flex-shrink: 0; line-height: 1.3; }
+  .sector-bar-bg { flex: 1; background: #1a1a2e; border-radius: 4px; height: 8px; overflow: hidden; }
+  .sector-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .sector-bar-val { font-size: 10px; font-family: monospace; color: #555; width: 28px; text-align: right; flex-shrink: 0; }
+  .winner-banner { margin-top: 18px; padding: 16px 20px; border-radius: 12px; border: 1px solid; }
+  .winner-label { font-size: 10px; font-family: monospace; letter-spacing: 2px; margin-bottom: 6px; }
+  .winner-name { font-size: 20px; font-weight: 700; font-family: Georgia, serif; margin-bottom: 6px; }
+  .winner-desc { font-size: 12px; color: #aaa; font-family: monospace; line-height: 1.7; }
+
+  /* CARD */
+  .card { background: #0c0c18; border: 1px solid #1e1e30; border-radius: 14px; overflow: hidden; margin-bottom: 12px; transition: border-color 0.3s, box-shadow 0.3s; }
+  .card-header { padding: 18px 22px; cursor: pointer; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid transparent; position: relative; transition: background 0.3s, border-color 0.3s; }
+  .card-top-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; display: none; }
+  .card-icon { font-size: 20px; transition: filter 0.3s; }
+  .card-meta { flex: 1; }
+  .card-module { font-size: 10px; color: #555; font-family: monospace; letter-spacing: 2px; margin-bottom: 2px; }
+  .card-title { font-size: 15px; color: #fff; font-weight: 700; font-family: Georgia, serif; }
+  .card-subtitle { font-size: 11px; color: #666; font-family: monospace; }
+  .card-right { display: flex; align-items: center; gap: 12px; }
+  .card-badge { font-size: 10px; color: #444; font-family: monospace; background: #111120; border: 1px solid #1e1e30; border-radius: 20px; padding: 4px 10px; }
+  .card-progress-count { text-align: right; }
+  .card-progress-count-n { font-size: 11px; font-family: monospace; }
+  .card-progress-count-l { font-size: 9px; color: #555; font-family: monospace; }
+  .card-arrow { font-size: 16px; color: #444; transition: transform 0.3s; display: inline-block; }
+  .card-arrow.open { transform: rotate(180deg); }
+
+  /* BODY */
+  .card-body { padding: 24px; display: none; }
+  .card-body.open { display: block; }
+
+  /* RING */
+  .ring-wrap { width: 56px; height: 56px; position: relative; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: monospace; }
+
+  /* PROGRESS */
+  .prog-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .prog-label { font-size: 10px; color: #555; font-family: monospace; }
+  .prog-pct { font-size: 10px; font-family: monospace; }
+  .prog-bar-bg { background: #1a1a2e; border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 8px; }
+  .prog-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .dots-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; transition: background 0.3s; }
+
+  /* QUESTION */
+  .q-label { font-size: 10px; font-family: monospace; letter-spacing: 1px; margin-bottom: 10px; }
+  .q-sector-tag { display: inline-block; font-size: 9px; font-family: monospace; padding: 2px 8px; border-radius: 10px; margin-bottom: 10px; border: 1px solid; opacity: 0.7; }
+  .q-text { font-size: 16px; color: #fff; line-height: 1.6; font-family: Georgia, serif; font-weight: 600; }
+
+  /* OPTIONS */
+  .opts { margin: 20px 0 24px; }
+  .opt { padding: 13px 16px; border-radius: 9px; margin-bottom: 8px; cursor: pointer; border: 1px solid #1e1e30; background: #111120; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease; }
+  .opt.selected { transform: translateX(4px); }
+  .opt-radio { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; border: 2px solid #333; background: transparent; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .opt-radio-inner { width: 7px; height: 7px; border-radius: 50%; background: #000; display: none; }
+  .opt-radio.selected .opt-radio-inner { display: block; }
+  .opt-letter { font-size: 10px; color: #555; font-family: monospace; margin-right: 8px; }
+  .opt-text { font-size: 13px; color: #aaa; font-family: monospace; line-height: 1.5; }
+
+  /* NAV */
+  .nav-row { display: flex; gap: 10px; justify-content: space-between; }
+  .btn-prev { background: none; border: 1px solid #1e1e30; color: #888; border-radius: 8px; padding: 10px 18px; font-size: 12px; font-family: monospace; cursor: pointer; }
+  .btn-prev:disabled { color: #333; cursor: not-allowed; }
+  .btn-next { border: none; border-radius: 8px; padding: 10px 24px; font-size: 12px; font-family: monospace; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .btn-next:disabled { background: #1a1a2e; color: #444; cursor: not-allowed; box-shadow: none; }
+
+  /* RESULT */
+  .result-center { text-align: center; margin-bottom: 24px; }
+  .result-ring-wrap { display: inline-block; width: 110px; height: 110px; position: relative; }
+  .result-ring-wrap svg { transform: rotate(-90deg); }
+  .result-ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; font-family: monospace; }
+  .result-nivel-label { font-size: 11px; font-family: monospace; letter-spacing: 2px; margin-top: 12px; margin-bottom: 6px; }
+  .result-nivel-name { font-size: 22px; color: #fff; font-weight: 700; font-family: Georgia, serif; margin-bottom: 4px; }
+  .result-pts { font-size: 11px; color: #555; font-family: monospace; }
+
+  /* SECTOR MINI BARS in result */
+  .mini-sector-label { font-size: 10px; color: #555; font-family: monospace; letter-spacing: 1px; margin: 18px 0 10px; }
+  .mini-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .mini-bar-name { font-size: 10px; font-family: monospace; color: #888; width: 140px; flex-shrink: 0; line-height: 1.3; }
+  .mini-bar-bg { flex: 1; background: #1a1a2e; border-radius: 3px; height: 6px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 3px; }
+  .mini-bar-val { font-size: 10px; font-family: monospace; color: #555; width: 22px; text-align: right; }
+
+  /* LEVEL STRIP */
+  .level-strip { display: flex; gap: 4px; margin-bottom: 20px; }
+  .level-strip-item { flex: 1; text-align: center; }
+  .level-strip-bar { height: 4px; border-radius: 2px; background: #1e1e30; margin-bottom: 5px; }
+  .level-strip-name { font-size: 9px; font-family: monospace; color: #444; line-height: 1.3; }
+
+  /* INTERP */
+  .interp { border-left: 3px solid; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+  .interp-label { font-size: 10px; font-family: monospace; letter-spacing: 1px; margin-bottom: 8px; }
+  .interp-text { font-size: 13px; color: #bbb; line-height: 1.8; font-family: Georgia, serif; font-style: italic; }
+
+  /* REVIEW */
+  .review-label { font-size: 10px; color: #555; font-family: monospace; letter-spacing: 1px; margin-bottom: 10px; }
+  .review-item { margin-bottom: 8px; padding: 10px 14px; background: #111120; border-radius: 8px; border: 1px solid #1e1e30; }
+  .review-num { font-size: 10px; color: #555; font-family: monospace; margin-bottom: 4px; }
+  .review-q { font-size: 11px; color: #777; font-family: monospace; margin-bottom: 5px; line-height: 1.4; }
+  .review-a { font-size: 12px; font-family: monospace; font-weight: 700; }
+  .btn-reset { width: 100%; background: none; border-radius: 9px; padding: 11px; font-size: 12px; font-family: monospace; cursor: pointer; letter-spacing: 1px; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid #12121e; padding: 14px 28px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer span { font-size: 11px; font-family: monospace; color: #333; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-line"></div>
+  <span class="topbar-logo">GENESIS</span>
+  <span class="topbar-sub">Descubre Tu Sector · 5 módulos · 10 preguntas cada uno</span>
+  <span class="topbar-counter" id="global-counter">0/5 completados</span>
+</div>
+
+<div class="main">
+  <div class="intro">
+    <div class="intro-label">PARA EL ESTUDIANTE</div>
+    <h1 class="intro-title">¿En qué sector del mundo quieres dejar huella?</h1>
+    <p class="intro-desc">
+      Responde desde tu realidad: tus apps, lo que ves en redes, lo que te mueve por dentro.<br/>
+      Al final descubrirás qué sectores económicos resuenan más contigo — y por qué importa saberlo.
+    </p>
+  </div>
+
+  <div id="score-summary">
+    <div class="summary-label" id="summary-label">MI AVANCE · 0 DE 5 MÓDULOS COMPLETADOS</div>
+    <div class="summary-grid" id="summary-grid"></div>
+    <div id="final-score">
+      <div class="final-title">🧭 TU MAPA DE SECTORES — BASADO EN TUS 5 MÓDULOS</div>
+      <div class="sector-bars" id="sector-bars-global"></div>
+      <div class="winner-banner" id="winner-banner"></div>
+    </div>
+  </div>
+
+  <div id="cards-container"></div>
+</div>
+
+<footer>
+  <span>GENESIS · Descubre Tu Sector Económico</span>
+  <span>50 preguntas · 5 módulos · 10 sectores analizados</span>
+</footer>
+
+<script>
+// ── SECTORES ECONÓMICOS ────────────────────────────────────────────────────
+const SECTORS = [
+  { key:"alimentos",      name:"Alimentos & Nutrición",      color:"#F5C842" },
+  { key:"salud",          name:"Salud & Farmacia",            color:"#F590C0" },
+  { key:"vivienda",       name:"Vivienda & Servicios Públicos", color:"#6EC87A" },
+  { key:"educacion",      name:"Educación & Profesiones",     color:"#42C8F5" },
+  { key:"transporte",     name:"Transporte & Logística",      color:"#F5835B" },
+  { key:"energia",        name:"Energía & Petróleo",          color:"#F5A623" },
+  { key:"comunicaciones", name:"Comunicaciones & Internet",   color:"#50C9C9" },
+  { key:"financiero",     name:"Financiero & Seguros",        color:"#A87FF0" },
+  { key:"entretenimiento",name:"Entretenimiento & Turismo",   color:"#E87070" },
+  { key:"seguridad",      name:"Seguridad & Defensa",         color:"#A8E06B" },
+];
+
+// ── 5 MÓDULOS — cada pregunta tiene un sector asignado y un peso (0-3) ────
+// El score de cada sector se acumula según la opción elegida (índice 0-3)
+const TESTS = [
+  // ── MÓDULO 1: Tu celular y tus apps ──────────────────────────────────────
+  {
+    id:1, key:"celular", icon:"◈", color:"#42C8F5", bg:"#00141a",
+    title:"Tu Celular y tus Apps", subtitle:"¿Qué apps usas y qué te dicen de ti?",
+    niveles:["Consumidor pasivo","Explorador digital","Usuario con propósito","Nativo con visión"],
+    interpretacion:[
+      "Usas el celular casi solo para entretenimiento. Hay mundos enteros que aún no has explorado.",
+      "Ya explotas algunas apps con propósito, pero aún hay sectores que podrían fascinarte.",
+      "Tus hábitos digitales muestran curiosidad real hacia sectores productivos.",
+      "Tu celular ya es una herramienta de exploración vocacional. Tienes ventaja enorme."
+    ],
+    preguntas:[
+      {
+        sector:"comunicaciones",
+        q:"¿Cuánto tiempo pasas en apps de mensajería, videollamadas o redes como TikTok/Instagram/YouTube?",
+        opts:["Casi todo el día, sin propósito claro","Bastante, pero solo entretenimiento","Algo, pero también sigo creadores que me enseñan","Lo uso conscientemente para conectar y aprender"]
+      },
+      {
+        sector:"entretenimiento",
+        q:"¿Sigues canales o cuentas relacionadas con cine, música, deportes o viajes?",
+        opts:["No los sigo o no me interesan","Los veo pero es solo entretenerme","Sigo algunos y me inspiran ideas","Sí, y me imagino trabajando en ese mundo"]
+      },
+      {
+        sector:"educacion",
+        q:"¿Usas apps para aprender algo fuera del colegio (Duolingo, Khan Academy, YouTube educativo)?",
+        opts:["Nunca","Lo he intentado una vez","Lo hago ocasionalmente","Es parte de mi rutina diaria"]
+      },
+      {
+        sector:"salud",
+        q:"¿Tienes apps de salud, bienestar, meditación o actividad física en tu celular?",
+        opts:["No tengo ninguna","Tengo pero no las uso","Las uso de vez en cuando","Las uso con constancia y me importan"]
+      },
+      {
+        sector:"financiero",
+        q:"¿Usas apps de finanzas, billeteras digitales, criptomonedas o de ahorro personal?",
+        opts:["Nunca he usado ninguna","He oído de ellas pero no las uso","Tengo alguna básica como Nequi o Daviplata","Sí, y me interesa entender cómo funciona el dinero digital"]
+      },
+      {
+        sector:"alimentos",
+        q:"¿Usas apps de domicilios, recetas, nutrición o para pedir comida (Rappi, iFood, etc.)?",
+        opts:["No las uso","Las uso solo para pedir comida sin pensar","Las uso y me interesan los modelos de delivery","Me fascina cómo funcionan esas plataformas de logística y comida"]
+      },
+      {
+        sector:"transporte",
+        q:"¿Usas apps de transporte, movilidad o logística (Uber, InDriver, Waze, seguimiento de envíos)?",
+        opts:["No las uso","Las uso para moverme sin más","Me llama la atención cómo optimizan rutas","Me interesa el negocio detrás de la movilidad y la logística"]
+      },
+      {
+        sector:"seguridad",
+        q:"¿Te interesa la ciberseguridad, privacidad de datos o has investigado cómo proteger tu celular?",
+        opts:["No me lo he preguntado","Algo sé pero no profundizo","Me preocupa y busco información al respecto","Sí, me apasiona y quiero entender más sobre seguridad digital"]
+      },
+      {
+        sector:"energia",
+        q:"¿Usas apps de clima, huella de carbono, energía solar o consumo eléctrico?",
+        opts:["Nunca","No me he fijado en eso","Alguna vez lo he revisado","Me interesa el impacto ambiental y sigo temas de energía"]
+      },
+      {
+        sector:"vivienda",
+        q:"¿Has explorado apps de diseño de interiores, domótica, construcción o gestión del hogar?",
+        opts:["Nunca","Lo vi por curiosidad pero no me enganchó","Me parece interesante cómo se diseñan espacios","Me fascina la tecnología aplicada a hogares y ciudades"]
+      }
+    ]
+  },
+
+  // ── MÓDULO 2: Lo que te mueve cuando navegas ────────────────────────────
+  {
+    id:2, key:"navegacion", icon:"◎", color:"#F5C842", bg:"#1a1600",
+    title:"Lo que Consumes Online", subtitle:"¿Qué temas te detienen cuando scrolleas?",
+    niveles:["Scroll sin rumbo","Consumidor selectivo","Lector con criterio","Explorador con vocación"],
+    interpretacion:[
+      "El contenido que consumes aún no te habla de tus intereses profundos. Eso puede cambiar hoy.",
+      "Ya hay temas que te frenan al scrollear. Son pistas de lo que te mueve.",
+      "Tu consumo de contenido tiene patrones claros. Hay sectores que te llaman la atención.",
+      "Lo que ves online ya es casi un mapa de tu vocación. Escúchalo."
+    ],
+    preguntas:[
+      {
+        sector:"salud",
+        q:"¿Te detienes cuando ves videos o posts sobre salud, medicina, enfermedades o avances farmacéuticos?",
+        opts:["No me llama la atención","Solo si es algo viral","A veces me engancha","Sí, lo busco activamente y me genera curiosidad profunda"]
+      },
+      {
+        sector:"alimentos",
+        q:"¿Consumes contenido sobre gastronomía, recetas, nutrición o la industria de los alimentos?",
+        opts:["No me interesa ese mundo","Veo algo si aparece en mi feed","Me gustan los videos de cocina y comida","Me fascina la ciencia detrás de los alimentos y el negocio gastronómico"]
+      },
+      {
+        sector:"energia",
+        q:"¿Sigues noticias o canales sobre energías renovables, cambio climático o petróleo?",
+        opts:["No lo sigo","Algo veo cuando es tendencia","Me preocupa el tema y lo sigo ocasionalmente","Es un tema que me mueve profundamente y creo que el futuro está ahí"]
+      },
+      {
+        sector:"transporte",
+        q:"¿Te interesan los contenidos sobre autos eléctricos, logística, drones o el futuro del transporte?",
+        opts:["No particularmente","Los veo si son llamativos","Me interesan los avances en movilidad","Me apasiona cómo se va a mover el mundo en los próximos años"]
+      },
+      {
+        sector:"financiero",
+        q:"¿Consumes contenido sobre economía, bolsa de valores, startups, emprendimiento o finanzas personales?",
+        opts:["Ese mundo me parece ajeno","Lo veo si es muy sencillo","Me interesa entender cómo funciona el dinero y los negocios","Es uno de mis temas favoritos en redes y podcasts"]
+      },
+      {
+        sector:"seguridad",
+        q:"¿Te engancha el contenido sobre conflictos geopolíticos, defensa, espionaje, justicia o crimen?",
+        opts:["No es un tema que me mueva","Lo veo si es espectacular","Me genera curiosidad el orden mundial y los sistemas de seguridad","Me apasiona entender los sistemas de poder, ley y defensa"]
+      },
+      {
+        sector:"vivienda",
+        q:"¿Sigues cuentas de arquitectura, urbanismo, diseño de ciudades o construcción sostenible?",
+        opts:["No lo he visto con interés","Vi algo alguna vez","Me parece interesante cómo se construye el mundo físico","Me imagino diseñando ciudades o soluciones de vivienda"]
+      },
+      {
+        sector:"educacion",
+        q:"¿Consumes contenido educativo, de aprendizaje, pedagogía innovadora o sobre el futuro de las universidades?",
+        opts:["No lo veo","Lo veo si es entretenido","Me interesan los nuevos modelos de aprendizaje","Creo que transformar la educación es uno de los retos más importantes del mundo"]
+      },
+      {
+        sector:"comunicaciones",
+        q:"¿Te atrae el contenido sobre inteligencia artificial, redes sociales, datos, apps y tecnología?",
+        opts:["Lo veo pero no profundizo","Algo me llama la atención","Sigo el tema con bastante interés","La tecnología y la comunicación digital son mis temas favoritos"]
+      },
+      {
+        sector:"entretenimiento",
+        q:"¿Sigues el mundo del entretenimiento: música, cine, deportes de alto rendimiento, turismo o gaming?",
+        opts:["Solo consumo sin analizar","Me gusta como fan","Me interesa la industria detrás del entretenimiento","Quiero trabajar en ese mundo creativo y de experiencias"]
+      }
+    ]
+  },
+
+  // ── MÓDULO 3: Tus conversaciones y lo que te genera emoción ─────────────
+  {
+    id:3, key:"emocion", icon:"⬡", color:"#F5835B", bg:"#1a0700",
+    title:"Tus Conversaciones y Emociones", subtitle:"¿De qué hablas cuando nadie te obliga?",
+    niveles:["Aún sin tema claro","Con chispas de interés","Temas que te mueven","Vocación que ya existe"],
+    interpretacion:[
+      "No encuentras aún un tema que te encienda. Eso está bien — explorar es el primer paso.",
+      "Hay temas que te generan emoción aunque no los hayas conectado con una carrera.",
+      "Cuando hablas de ciertos temas, algo en ti se activa. Eso es información valiosa.",
+      "Ya tienes una vocación emergente. La emoción no miente — hay un sector que te llama."
+    ],
+    preguntas:[
+      {
+        sector:"salud",
+        q:"¿Alguna vez has hablado con alguien sobre enfermedades, medicina o cómo mejorar la salud de las personas?",
+        opts:["Nunca ha sido tema mío","Solo si alguien lo saca","A veces lo hablo con interés genuino","Sí, me genera emoción y quiero entender más sobre el sistema de salud"]
+      },
+      {
+        sector:"alimentos",
+        q:"¿Hablas o piensas sobre el hambre en el mundo, la calidad de los alimentos o el futuro de la comida?",
+        opts:["No es un tema que me mueva","Lo he pensado de pasada","Me genera preocupación real y ganas de entender","Sí, me mueve profundamente y creo que hay mucho por hacer ahí"]
+      },
+      {
+        sector:"educacion",
+        q:"¿Te genera rabia o energía cuando piensas en cómo podría mejorar el sistema educativo?",
+        opts:["No lo he pensado así","Algo me molesta pero no actúo","Sí, tengo ideas de lo que cambiaría","Me apasiona y podría dedicar mi vida a transformar la educación"]
+      },
+      {
+        sector:"comunicaciones",
+        q:"¿Hablas frecuentemente sobre el impacto de las redes sociales, la desinformación o el poder de la tecnología?",
+        opts:["No suelo hablar de eso","Solo cuando está en la conversación","Sí, me genera reflexiones y debate","Es un tema que me apasiona y creo que define el futuro"]
+      },
+      {
+        sector:"energia",
+        q:"¿Te genera emoción o urgencia hablar del calentamiento global, la energía solar o la transición energética?",
+        opts:["No me toca ese tema","Lo menciono si sale pero no profundizo","Sí, me preocupa y lo discuto con mis amigos","Es un tema que me moviliza — quiero ser parte del cambio energético"]
+      },
+      {
+        sector:"financiero",
+        q:"¿Te entusiasma hablar de cómo se crea una empresa, cómo funciona el mercado o cómo se hace dinero de forma legítima?",
+        opts:["No me interesa ese mundo","Lo entiendo básicamente pero no me apasiona","Sí, me gusta entender los modelos de negocio","Me fascina y podría hablar horas de negocios, economía y valor"]
+      },
+      {
+        sector:"seguridad",
+        q:"¿Te genera interés hablar de justicia, corrupción, leyes, conflictos internacionales o fuerzas armadas?",
+        opts:["No me llama la atención","Lo sigo de lejos","Me interesa cómo funciona el sistema de seguridad y justicia","Me apasiona — creo que la seguridad y la justicia son pilares del bienestar"]
+      },
+      {
+        sector:"vivienda",
+        q:"¿Piensas en el acceso a vivienda, los barrios del futuro o cómo mejorar las ciudades?",
+        opts:["No lo he pensado","Algo me llama la atención","Me parece un tema importante y lo discuto","Me genera una emoción especial imaginar ciudades más justas y bien diseñadas"]
+      },
+      {
+        sector:"transporte",
+        q:"¿Te genera curiosidad o conversación el tema de la movilidad urbana, los carros autónomos o la logística global?",
+        opts:["No particularmente","Lo menciono si está en las noticias","Me parece fascinante cómo se mueve el mundo","Sí, me emociona el futuro del transporte y la conectividad"]
+      },
+      {
+        sector:"entretenimiento",
+        q:"¿Cuando hablas de cine, música, deportes o turismo, sientes que es algo más que hobby — que podría ser tu mundo?",
+        opts:["No lo había visto así","Tal vez, pero no lo tomo en serio","A veces siento que eso me llama","Sí, el entretenimiento y las experiencias son donde quiero estar"]
+      }
+    ]
+  },
+
+  // ── MÓDULO 4: Tus habilidades y lo que haces naturalmente ────────────────
+  {
+    id:4, key:"habilidades", icon:"◇", color:"#6EC87A", bg:"#001a05",
+    title:"Tus Habilidades Naturales", subtitle:"¿Qué haces bien sin que nadie te lo enseñe?",
+    niveles:["Talento sin nombre","En exploración","Habilidades emergentes","Perfil vocacional claro"],
+    interpretacion:[
+      "Aún no has identificado qué haces naturalmente bien. Eso es lo que estos módulos revelan.",
+      "Tienes habilidades pero no las has conectado a ningún sector productivo todavía.",
+      "Hay cosas que haces con facilidad y que encajan perfectamente en ciertos sectores.",
+      "Tus habilidades naturales apuntan con claridad a un perfil vocacional. Escúchalas."
+    ],
+    preguntas:[
+      {
+        sector:"salud",
+        q:"¿Se te da bien escuchar a las personas, entender su dolor y pensar en cómo ayudarlas físicamente?",
+        opts:["No especialmente","A veces sí","Sí, me sale con bastante naturalidad","Es algo que hago instintivamente y me genera mucha satisfacción"]
+      },
+      {
+        sector:"alimentos",
+        q:"¿Tienes intuición para los sabores, las recetas, la nutrición o el negocio de la comida?",
+        opts:["No es algo que se me dé bien","Algo básico","Tengo buen gusto y creatividad en ese campo","Sí, es una de mis mayores fortalezas naturales"]
+      },
+      {
+        sector:"comunicaciones",
+        q:"¿Se te facilita el manejo de tecnología, programar, diseñar o comunicar ideas usando herramientas digitales?",
+        opts:["No es mi fuerte","Algo básico manejo","Me adapto rápido y me resulta fácil","Es donde más fluyo — la tecnología es mi lenguaje natural"]
+      },
+      {
+        sector:"educacion",
+        q:"¿Tienes facilidad para explicar conceptos a otros, enseñar, diseñar procesos o estructurar información?",
+        opts:["No es algo que haga bien","Algo puedo hacer","Sí, se me da bien organizar y transmitir ideas","Me dicen frecuentemente que explico muy bien — enseñar me sale natural"]
+      },
+      {
+        sector:"financiero",
+        q:"¿Tienes facilidad para los números, los presupuestos, detectar oportunidades de negocio o pensar estratégicamente?",
+        opts:["Los números no son lo mío","Algo básico","Tengo buen ojo para lo económico y los negocios","Sí, analizar, calcular y pensar en estrategia me resulta muy natural"]
+      },
+      {
+        sector:"transporte",
+        q:"¿Se te da bien organizar, planear rutas, gestionar tiempos o coordinar personas y recursos?",
+        opts:["No soy muy organizado/a","Algo lo hago","Soy bastante bueno/a planificando y optimizando","La logística y coordinación es algo que hago casi sin pensar"]
+      },
+      {
+        sector:"energia",
+        q:"¿Tienes habilidad para entender sistemas físicos, mecánicos o eléctricos, o te atrae la ingeniería?",
+        opts:["No es mi área","Entiendo lo básico","Me resulta fácil entender cómo funcionan las cosas físicamente","Me apasiona y se me da muy bien entender sistemas técnicos y energéticos"]
+      },
+      {
+        sector:"entretenimiento",
+        q:"¿Tienes talento para crear, narrar, actuar, diseñar experiencias o conectar con audiencias?",
+        opts:["No me veo en ese rol","Algo de creatividad tengo","Sí, soy bastante creativo/a y me gusta comunicar","Crear experiencias y contenido es donde más me expreso y más brillo"]
+      },
+      {
+        sector:"seguridad",
+        q:"¿Se te facilita analizar riesgos, pensar tácticamente, resolver conflictos o aplicar reglas con criterio?",
+        opts:["No es algo que haga bien","En situaciones básicas sí","Soy bastante analítico/a y me desenvuelvo bien bajo presión","Pensar en sistemas de seguridad, leyes y riesgos me sale muy natural"]
+      },
+      {
+        sector:"vivienda",
+        q:"¿Tienes inclinación por el diseño espacial, la arquitectura, el medio ambiente o la construcción?",
+        opts:["No lo he notado en mí","Algo de sensibilidad estética tengo","Sí, pienso mucho en espacios, diseño y urbanismo","Me imagino construyendo o diseñando el entorno donde vive la gente"]
+      }
+    ]
+  },
+
+  // ── MÓDULO 5: Tu visión del futuro y el impacto que quieres tener ────────
+  {
+    id:5, key:"impacto", icon:"⬢", color:"#A87FF0", bg:"#0a0014",
+    title:"Tu Visión de Impacto", subtitle:"¿En qué quieres dejar huella en el mundo?",
+    niveles:["Sin visión definida","Visión en formación","Propósito emergente","Impacto con dirección"],
+    interpretacion:[
+      "Aún no tienes clara la huella que quieres dejar. Este es el módulo más importante para empezar.",
+      "Hay áreas donde quieres impactar, pero todavía es vago. Estos resultados te dan claridad.",
+      "Tu propósito está tomando forma. Hay un sector donde sientes que puedes cambiar algo real.",
+      "Tienes una visión de impacto clara. Eso es lo más poderoso que puedes construir a tu edad."
+    ],
+    preguntas:[
+      {
+        sector:"salud",
+        q:"¿Te imaginas trabajando para que más personas vivan con salud y dignidad, aunque sea complejo?",
+        opts:["No lo he imaginado","Tal vez en algo relacionado","Sí, me motiva mejorar el acceso a la salud","Es una de mis motivaciones más profundas — la salud es un derecho"]
+      },
+      {
+        sector:"alimentos",
+        q:"¿Te mueve la idea de resolver el hambre, mejorar la nutrición o crear sistemas alimentarios más justos?",
+        opts:["No es algo que me convoque","Algo me importa","Sí, creo que el acceso a buena comida cambia vidas","Me encendería trabajar para que todos puedan comer bien y de forma sostenible"]
+      },
+      {
+        sector:"educacion",
+        q:"¿Te imaginas creando o mejorando sistemas de aprendizaje para que más personas puedan desarrollarse?",
+        opts:["No lo he pensado","Algo de eso me llama","Sí, transformar la educación me parece urgente","Es mi mayor sueño — la educación es la llave que cambia generaciones"]
+      },
+      {
+        sector:"energia",
+        q:"¿Te moviliza la idea de trabajar en soluciones energéticas limpias que cambien la relación de la humanidad con el planeta?",
+        opts:["No es algo que me mueva","Algo me preocupa el tema","Sí, creo que la transición energética es urgente","Quiero dedicar mi vida a construir un mundo con energía limpia y accesible"]
+      },
+      {
+        sector:"comunicaciones",
+        q:"¿Quieres usar la tecnología o los medios para conectar personas, democratizar el conocimiento o resolver problemas sociales?",
+        opts:["No lo había visto así","Algo de eso me interesa","Sí, creo que la tecnología puede transformar la sociedad","Es mi visión — usar la comunicación y la tecnología para crear un mundo más conectado y justo"]
+      },
+      {
+        sector:"financiero",
+        q:"¿Te imaginas creando empresas, fondos de inversión o sistemas financieros que generen prosperidad real para muchos?",
+        opts:["No me lo he planteado","Algo de negocio me llama","Sí, creo que los negocios bien hechos pueden cambiar realidades","Mi sueño es construir valor económico que transforme comunidades y países"]
+      },
+      {
+        sector:"transporte",
+        q:"¿Te mueve la idea de mejorar cómo se mueven las personas y los bienes, haciendo el mundo más eficiente y conectado?",
+        opts:["No especialmente","Algo me parece interesante","Sí, la movilidad y la logística son claves para el desarrollo","Quiero diseñar los sistemas de transporte que conecten a las personas del futuro"]
+      },
+      {
+        sector:"vivienda",
+        q:"¿Te imaginas diseñando ciudades, viviendas dignas o servicios públicos que mejoren la vida de comunidades enteras?",
+        opts:["No lo he pensado","Algo me llama de ese mundo","Sí, creo que el hábitat define la calidad de vida","Es mi visión — construir entornos donde la gente pueda vivir con dignidad"]
+      },
+      {
+        sector:"entretenimiento",
+        q:"¿Te mueve la idea de crear experiencias, arte, deportes o turismo que conecten a las personas y llenen de sentido sus vidas?",
+        opts:["No me lo planteo como impacto","Algo de eso me gusta","Sí, creo que la cultura y el entretenimiento son fundamentales","Las experiencias y la creatividad son mi forma de impactar el mundo"]
+      },
+      {
+        sector:"seguridad",
+        q:"¿Te moviliza la idea de trabajar por la justicia, la paz, la seguridad o la defensa de los derechos de las personas?",
+        opts:["No es algo que me llame","Algo me preocupa la injusticia","Sí, creo que sin seguridad y justicia no hay desarrollo real","Es mi vocación — proteger, ordenar y construir sociedades más seguras y justas"]
+      }
+    ]
+  }
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = {};
+TESTS.forEach(t => {
+  state[t.key] = { open: false, current: 0, answers: {}, done: false, selected: null };
+});
+const globalScores = {};   // { modKey: pct }
+const sectorAccum = {};    // { sectorKey: totalPoints }
+SECTORS.forEach(s => sectorAccum[s.key] = 0);
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function buildRing(pct, color, size) {
+  const r = (size - 12) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#1e1e30" stroke-width="6"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+      stroke-dasharray="${dash} ${circ-dash}" stroke-linecap="round"
+      style="filter:drop-shadow(0 0 6px ${color}80)"/>
+  </svg>`;
+}
+
+function getSectorScoresFromModule(test, answers) {
+  // Returns {sectorKey: totalPoints} for this module
+  const result = {};
+  test.preguntas.forEach((p, i) => {
+    const val = answers[i] !== undefined ? answers[i] : 0;
+    result[p.sector] = (result[p.sector] || 0) + val;
+  });
+  return result;
+}
+
+function computeGlobalSectors() {
+  // Reset accumulator
+  SECTORS.forEach(s => sectorAccum[s.key] = 0);
+  TESTS.forEach(t => {
+    const s = state[t.key];
+    if (s.done) {
+      const mod = getSectorScoresFromModule(t, s.answers);
+      Object.keys(mod).forEach(k => { sectorAccum[k] = (sectorAccum[k]||0) + mod[k]; });
+    }
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderCard(test) {
+  const s = state[test.key];
+  const totalAnswered = Object.keys(s.answers).length;
+  const maxScore = test.preguntas.length * 3;
+  const rawScore = Object.values(s.answers).reduce((a,v)=>a+v,0);
+  const pct = s.done ? Math.round((rawScore/maxScore)*100) : 0;
+  const nivel = Math.min(3, Math.floor(pct/26));
+  const prog = (totalAnswered / test.preguntas.length) * 100;
+  const q = test.preguntas[s.current];
+  const sectorInfo = SECTORS.find(x=>x.key===q?.sector);
+
+  // Right badge
+  let rightBadge = '';
+  if (s.done) {
+    rightBadge = `<div class="ring-wrap">${buildRing(pct,test.color,56)}<div class="ring-pct" style="color:${test.color}">${pct}%</div></div>`;
+  } else if (totalAnswered > 0) {
+    rightBadge = `<div class="card-progress-count">
+      <div class="card-progress-count-n" style="color:${test.color}">${totalAnswered}/${test.preguntas.length}</div>
+      <div class="card-progress-count-l">respondidas</div></div>`;
+  } else {
+    rightBadge = `<div class="card-badge">10 preguntas</div>`;
+  }
+
+  let bodyContent = '';
+  if (!s.done) {
+    const dotsHtml = test.preguntas.map((_,i)=>{
+      let bg='#1e1e30', shadow='none';
+      if (s.answers[i]!==undefined) { bg=test.color; }
+      else if (i===s.current) { bg=test.color+'60'; shadow=`0 0 6px ${test.color}`; }
+      return `<div class="dot" style="background:${bg};box-shadow:${shadow}"></div>`;
+    }).join('');
+
+    const optsHtml = q.opts.map((opt,i)=>{
+      const isSel = s.selected===i;
+      return `<div class="opt${isSel?' selected':''}"
+        style="border-color:${isSel?test.color+'70':'#1e1e30'};background:${isSel?test.color+'12':'#111120'};box-shadow:${isSel?`0 0 12px ${test.color}15`:'none'};transform:${isSel?'translateX(4px)':'none'}"
+        onclick="selectOpt('${test.key}',${i})">
+        <div class="opt-radio${isSel?' selected':''}" style="border-color:${isSel?test.color:'#333'};background:${isSel?test.color:'transparent'}">
+          <div class="opt-radio-inner"></div>
+        </div>
+        <div>
+          <span class="opt-letter" style="color:${isSel?test.color:'#555'}">${String.fromCharCode(65+i)}</span>
+          <span class="opt-text" style="color:${isSel?'#fff':'#aaa'}">${opt}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    bodyContent = `
+      <div style="margin-bottom:22px">
+        <div class="prog-row">
+          <span class="prog-label">Pregunta ${s.current+1} de ${test.preguntas.length}</span>
+          <span class="prog-pct" style="color:${test.color}">${Math.round(prog)}% completado</span>
+        </div>
+        <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${prog}%;background:${test.color};box-shadow:0 0 8px ${test.color}60"></div></div>
+        <div class="dots-row">${dotsHtml}</div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div class="q-label" style="color:${test.color}">PREGUNTA ${s.current+1}</div>
+        ${sectorInfo ? `<div class="q-sector-tag" style="color:${sectorInfo.color};border-color:${sectorInfo.color}40;background:${sectorInfo.color}10">⬡ ${sectorInfo.name}</div>` : ''}
+        <p class="q-text">${q.q}</p>
+      </div>
+      <div class="opts">${optsHtml}</div>
+      <div class="nav-row">
+        <button class="btn-prev" onclick="prevQ('${test.key}')" ${s.current===0?'disabled':''}>← Anterior</button>
+        <button class="btn-next"
+          style="background:${s.selected===null?'#1a1a2e':test.color};color:${s.selected===null?'#444':'#000'};box-shadow:${s.selected!==null?`0 0 12px ${test.color}40`:'none'}"
+          onclick="nextQ('${test.key}')" ${s.selected===null?'disabled':''}>
+          ${s.current===test.preguntas.length-1?'Ver mi resultado ▶':'Siguiente →'}
+        </button>
+      </div>`;
+  } else {
+    // RESULT
+    const levelStrip = test.niveles.map((n,i)=>{
+      const active=i<=nivel, isCur=i===nivel;
+      return `<div class="level-strip-item">
+        <div class="level-strip-bar" style="background:${active?test.color:'#1e1e30'};box-shadow:${isCur?`0 0 8px ${test.color}`:'none'}"></div>
+        <div class="level-strip-name" style="color:${isCur?test.color:'#444'}">${n}</div>
+      </div>`;
+    }).join('');
+
+    // Sector mini bars for this module
+    const modSectors = getSectorScoresFromModule(test, s.answers);
+    const maxModSector = Math.max(...Object.values(modSectors), 1);
+    const sortedSectors = Object.entries(modSectors).sort((a,b)=>b[1]-a[1]);
+    const miniBarHtml = sortedSectors.map(([k,v])=>{
+      const si = SECTORS.find(x=>x.key===k);
+      const w = Math.round((v/maxModSector)*100);
+      return `<div class="mini-bar-row">
+        <div class="mini-bar-name" style="color:${si.color}">${si.name}</div>
+        <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${w}%;background:${si.color};box-shadow:0 0 6px ${si.color}60"></div></div>
+        <div class="mini-bar-val">${v}pts</div>
+      </div>`;
+    }).join('');
+
+    const topSector = sortedSectors[0];
+    const topSectorInfo = SECTORS.find(x=>x.key===topSector[0]);
+
+    const reviewItems = test.preguntas.map((p,i)=>{
+      const val=s.answers[i]||0;
+      const bc=val===3?test.color:val===2?test.color+'aa':val===1?'#F5A623':'#E87070';
+      return `<div class="review-item">
+        <div class="review-num">P${i+1} · ${['D','C','B','A'][val]}</div>
+        <div class="review-q">${p.q}</div>
+        <div class="review-a" style="color:${bc}">→ ${p.opts[val]}</div>
+      </div>`;
+    }).join('');
+
+    bodyContent = `
+      <div class="result-center">
+        <div class="result-ring-wrap">${buildRing(pct,test.color,110)}<div class="result-ring-pct" style="color:${test.color}">${pct}%</div></div>
+        <div class="result-nivel-label" style="color:${test.color}">NIVEL ${nivel+1} DE 4</div>
+        <div class="result-nivel-name">${test.niveles[nivel]}</div>
+        <div class="result-pts">${rawScore} puntos de ${maxScore} posibles</div>
+      </div>
+      <div class="level-strip">${levelStrip}</div>
+      <div class="interp" style="background:${test.color}0e;border-color:${test.color}22;border-left-color:${test.color}">
+        <div class="interp-label" style="color:${test.color}">💡 LO QUE DICE TU RESULTADO</div>
+        <p class="interp-text">${test.interpretacion[nivel]}</p>
+      </div>
+      <div class="mini-sector-label">SECTORES QUE RESONARON EN ESTE MÓDULO</div>
+      ${miniBarHtml}
+      <div style="margin:16px 0 20px;padding:12px 16px;border-radius:9px;border:1px solid ${topSectorInfo.color}30;background:${topSectorInfo.color}0a">
+        <div style="font-size:9px;font-family:monospace;color:${topSectorInfo.color};letter-spacing:1px;margin-bottom:4px">⬡ SECTOR MÁS DESTACADO EN ESTE MÓDULO</div>
+        <div style="font-size:14px;font-weight:700;font-family:Georgia,serif;color:#fff">${topSectorInfo.name}</div>
+      </div>
+      <div class="review-label">TUS RESPUESTAS</div>
+      ${reviewItems}
+      <button class="btn-reset" style="border:1px solid ${test.color}40;color:${test.color};margin-top:16px" onclick="resetTest('${test.key}')">↺ Repetir módulo</button>`;
+  }
+
+  return `
+    <div class="card" id="card-${test.key}"
+      style="border-color:${s.open?test.color+'40':'#1e1e30'};box-shadow:${s.open?`0 4px 24px ${test.color}12`:'none'}">
+      <div class="card-header" onclick="toggleCard('${test.key}')"
+        style="background:${s.open?test.bg:'transparent'};border-bottom-color:${s.open?test.color+'20':'transparent'}">
+        <div class="card-top-line" style="display:${s.open?'block':'none'};background:linear-gradient(90deg,transparent,${test.color},transparent)"></div>
+        <span class="card-icon" style="color:${test.color};filter:${s.open?`drop-shadow(0 0 6px ${test.color})`:'none'}">${test.icon}</span>
+        <div class="card-meta">
+          <div class="card-module">MÓDULO ${String(test.id).padStart(2,'0')}</div>
+          <div class="card-title">${test.title}</div>
+          <div class="card-subtitle">${test.subtitle}</div>
+        </div>
+        <div class="card-right">${rightBadge}<span class="card-arrow${s.open?' open':''}">▾</span></div>
+      </div>
+      <div class="card-body${s.open?' open':''}">${bodyContent}</div>
+    </div>`;
+}
+
+function renderSummary() {
+  const completed = Object.keys(globalScores).length;
+  const summaryEl = document.getElementById('score-summary');
+  if (completed===0) { summaryEl.style.display='none'; return; }
+  summaryEl.style.display='block';
+  document.getElementById('summary-label').textContent =
+    `MI AVANCE · ${completed} DE 5 MÓDULOS COMPLETADOS`;
+
+  const grid = document.getElementById('summary-grid');
+  grid.innerHTML = TESTS.map(t=>{
+    const sc = globalScores[t.key];
+    const has = sc!==undefined;
+    return `<div class="summary-cell" style="${has?`background:${t.color}10;border-color:${t.color}30`:''}">
+      <div class="summary-cell-icon" style="color:${has?t.color:'#333'}">${t.icon}</div>
+      ${has?`<div class="summary-cell-score" style="color:${t.color}">${sc}%</div>`
+           :`<div style="font-size:10px;color:#333;font-family:monospace">—</div>`}
+      <div class="summary-cell-name">${t.title.split(' ').slice(0,2).join(' ')}</div>
+    </div>`;
+  }).join('');
+
+  const finalEl = document.getElementById('final-score');
+  if (completed===5) {
+    finalEl.style.display='block';
+    computeGlobalSectors();
+
+    // Sort sectors by score
+    const sorted = [...SECTORS].map(s=>({...s, pts:sectorAccum[s.key]}))
+                               .sort((a,b)=>b.pts-a.pts);
+    const maxPts = sorted[0].pts || 1;
+
+    document.getElementById('sector-bars-global').innerHTML = sorted.map(s=>{
+      const w = Math.round((s.pts/maxPts)*100);
+      return `<div class="sector-bar-row">
+        <div class="sector-bar-name" style="color:${s.color}">${s.name}</div>
+        <div class="sector-bar-bg"><div class="sector-bar-fill" style="width:${w}%;background:${s.color};box-shadow:0 0 8px ${s.color}50"></div></div>
+        <div class="sector-bar-val" style="color:${s.color}">${s.pts}p</div>
+      </div>`;
+    }).join('');
+
+    const winner = sorted[0];
+    const runner = sorted[1];
+    const sectorDescs = {
+      alimentos:"Tu vocación apunta a la industria que alimenta al mundo — desde la gastronomía hasta la biotecnología de alimentos y los modelos de distribución.",
+      salud:"Tu perfil resuena con el sistema de salud — la medicina, la farmacia, los dispositivos médicos y los servicios de bienestar.",
+      vivienda:"Te atrae construir el mundo físico — arquitectura, urbanismo, energías del hogar y servicios para que las personas vivan mejor.",
+      educacion:"Tu vocación está en transformar cómo aprenden las personas — educación, tecnología educativa, formación y desarrollo humano.",
+      transporte:"Te fascina cómo se mueve el mundo — logística, movilidad urbana, infraestructura vial y el futuro del transporte autónomo.",
+      energia:"Te moviliza la transición energética — petróleo, gas, energía solar, eólica y los sistemas que alimentan la economía global.",
+      comunicaciones:"Tu perfil encaja con el mundo de la tecnología, las telecomunicaciones, el software y la era digital.",
+      financiero:"Te atrae el ecosistema económico — banca, inversiones, fintech, seguros y la creación de valor a escala.",
+      entretenimiento:"Tu vocación está en el mundo creativo — turismo, medios, deportes, entretenimiento y las experiencias que dan sentido a la vida.",
+      seguridad:"Te mueve proteger y ordenar — seguridad pública, defensa, justicia, derecho y la construcción de sociedades más seguras."
+    };
+
+    document.getElementById('winner-banner').innerHTML = `
+      <div class="winner-label" style="color:${winner.color}">🏆 TU SECTOR PRINCIPAL · BASADO EN LOS 5 MÓDULOS</div>
+      <div class="winner-name" style="color:#fff">${winner.name}</div>
+      <div style="font-size:10px;font-family:monospace;color:${winner.color};margin-bottom:10px">${winner.pts} puntos acumulados · también resuena: ${runner.name}</div>
+      <div class="winner-desc">${sectorDescs[winner.key]}</div>`;
+    document.getElementById('winner-banner').style.cssText +=
+      `border-color:${winner.color}40;background:${winner.color}0a`;
+  } else {
+    finalEl.style.display='none';
+  }
+}
+
+function renderAll() {
+  document.getElementById('cards-container').innerHTML = TESTS.map(t=>renderCard(t)).join('');
+  renderSummary();
+  document.getElementById('global-counter').textContent =
+    `${Object.keys(globalScores).length}/5 completados`;
+}
+
+// ── INTERACTIONS ───────────────────────────────────────────────────────────
+function toggleCard(key) {
+  state[key].open = !state[key].open;
+  renderAll();
+}
+
+function selectOpt(key, idx) {
+  state[key].selected = idx;
+  const test = TESTS.find(t=>t.key===key);
+  const card = document.getElementById(`card-${key}`);
+  card.querySelectorAll('.opt').forEach((el,i)=>{
+    const isSel=i===idx;
+    el.style.borderColor=isSel?`${test.color}70`:'#1e1e30';
+    el.style.background=isSel?`${test.color}12`:'#111120';
+    el.style.boxShadow=isSel?`0 0 12px ${test.color}15`:'none';
+    el.style.transform=isSel?'translateX(4px)':'none';
+    const radio=el.querySelector('.opt-radio');
+    radio.style.borderColor=isSel?test.color:'#333';
+    radio.style.background=isSel?test.color:'transparent';
+    el.querySelector('.opt-radio-inner').style.display=isSel?'block':'none';
+    el.querySelector('.opt-letter').style.color=isSel?test.color:'#555';
+    el.querySelector('.opt-text').style.color=isSel?'#fff':'#aaa';
+  });
+  const btn=card.querySelector('.btn-next');
+  btn.disabled=false;
+  btn.style.background=test.color;
+  btn.style.color='#000';
+  btn.style.boxShadow=`0 0 12px ${test.color}40`;
+}
+
+function nextQ(key) {
+  const s=state[key];
+  const test=TESTS.find(t=>t.key===key);
+  if (s.selected===null) return;
+  s.answers[s.current]=s.selected;
+  if (s.current<test.preguntas.length-1) {
+    s.current++;
+    s.selected=s.answers[s.current]!==undefined?s.answers[s.current]:null;
+    renderAll();
+  } else {
+    const raw=Object.values(s.answers).reduce((a,b)=>a+b,0);
+    s.done=true;
+    globalScores[key]=Math.round((raw/(test.preguntas.length*3))*100);
+    renderAll();
+  }
+}
+
+function prevQ(key) {
+  const s=state[key];
+  if (s.current===0) return;
+  s.current--;
+  s.selected=s.answers[s.current]!==undefined?s.answers[s.current]:null;
+  renderAll();
+}
+
+function resetTest(key) {
+  state[key]={open:true,current:0,answers:{},done:false,selected:null};
+  delete globalScores[key];
+  renderAll();
+}
+
+renderAll();
+</script>
+</body>
+</html>
